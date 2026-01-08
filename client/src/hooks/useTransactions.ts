@@ -9,14 +9,6 @@ export function useTransactions(filters?: TransactionFilters) {
   });
 }
 
-export function useTransaction(id: string) {
-  return useQuery({
-    queryKey: ['transactions', id],
-    queryFn: () => transactionsApi.getById(id),
-    enabled: !!id,
-  });
-}
-
 interface CreateTransactionParams {
   data: Omit<Transaction, 'id'>;
   isRecurring?: boolean;

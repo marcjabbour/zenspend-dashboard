@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Mic, Sparkles, Loader2, Trash2, Repeat } from 'lucide-react';
+import { X, Trash2, Repeat } from 'lucide-react';
 import { Category, Transaction, TransactionType, RecurrenceAction } from '../types';
-import { GoogleGenAI, Type } from "@google/genai";
 
 interface TransactionModalProps {
   isOpen: boolean;

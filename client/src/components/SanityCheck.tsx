@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { UserSettings, Transaction } from '../types';
-import { RefreshCw, Calculator, Landmark, CreditCard, AlertTriangle } from 'lucide-react';
+import { Calculator, Landmark, AlertTriangle } from 'lucide-react';
 
 interface SanityCheckProps {
   transactions: Transaction[];

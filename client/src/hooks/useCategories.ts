@@ -9,14 +9,6 @@ export function useCategories() {
   });
 }
 
-export function useCategory(id: string) {
-  return useQuery({
-    queryKey: ['categories', id],
-    queryFn: () => categoriesApi.getById(id),
-    enabled: !!id,
-  });
-}
-
 export function useCreateCategory() {
   const queryClient = useQueryClient();
 

@@ -1,4 +1,4 @@
-import { Category, Transaction, UserSettings, RecurrenceAction } from '../types';
+import { Category, Transaction, UserSettings } from '../types';
 
 const API_BASE = '/api';
 
@@ -24,15 +24,11 @@ interface ApiResponse<T> {
 }
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const headers: HeadersInit = { ...options?.headers };
-  // Only set Content-Type for requests with a body
-  if (options?.body) {
-    headers['Content-Type'] = 'application/json';
-  }
-
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
-    headers,
+    headers: options?.body
+      ? { 'Content-Type': 'application/json', ...options?.headers }
+      : options?.headers,
   });
 
   const json: ApiResponse<T> = await response.json();
@@ -51,8 +47,6 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 // Categories API
 export const categoriesApi = {
   getAll: () => request<Category[]>('/categories'),
-
-  getById: (id: string) => request<Category>(`/categories/${id}`),
 
   create: (data: Omit<Category, 'id'>) =>
     request<Category>('/categories', {
@@ -92,8 +86,6 @@ export const transactionsApi = {
     const query = params.toString();
     return request<Transaction[]>(`/transactions${query ? `?${query}` : ''}`);
   },
-
-  getById: (id: string) => request<Transaction>(`/transactions/${id}`),
 
   create: (data: Omit<Transaction, 'id'>) =>
     request<Transaction>('/transactions', {
