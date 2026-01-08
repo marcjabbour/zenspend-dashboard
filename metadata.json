@@ -1,0 +1,7 @@
+{
+  "name": "ZenSpend Dashboard",
+  "description": "A premium, dark-mode financial dashboard with a calendar-centric view for tracking weekly allowances, categorical budgets, and real-time spending progress.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
