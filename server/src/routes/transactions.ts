@@ -116,10 +116,21 @@ export async function transactionsRoutes(fastify: FastifyInstance) {
     const { base, months } = parseResult.data;
     const groupId = crypto.randomUUID();
     const baseDate = new Date(base.date + 'T00:00:00');
+    const baseDay = baseDate.getDate();
     const createdTransactions: schema.Transaction[] = [];
 
     for (let i = 0; i < months; i++) {
-      const projectDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate());
+      const targetYear = baseDate.getFullYear();
+      const targetMonth = baseDate.getMonth() + i;
+
+      // Get the last day of the target month to handle short months (Feb, Apr, etc.)
+      const lastDayOfMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+      // Use the base day, but clamp to the last day if the month is shorter
+      // e.g., 31st becomes 28th in February, 30th in April
+      const actualDay = Math.min(baseDay, lastDayOfMonth);
+      const projectDate = new Date(targetYear, targetMonth, actualDay);
+
       const id = crypto.randomUUID();
 
       const transaction = {

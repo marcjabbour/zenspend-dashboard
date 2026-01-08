@@ -26,6 +26,7 @@ import SettingsModal from './components/SettingsModal';
 import SanityCheck from './components/SanityCheck';
 import WeeklySummaryModal from './components/WeeklySummaryModal';
 import LiveAgentOverlay from './components/LiveAgentOverlay';
+import StatTransactionsModal from './components/StatTransactionsModal';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -36,6 +37,15 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const DEFAULT_SETTINGS = {
+  monthlyIncome: 8000,
+  currency: '$',
+  showFixedCosts: true,
+  checkingBalance: 0,
+  creditCardBalance: 0,
+  balanceAsOf: new Date().toISOString(),
+};
 
 const AppContent: React.FC = () => {
   // UI State (not persisted to backend)
@@ -48,6 +58,7 @@ const AppContent: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState<string | undefined>(undefined);
   const [weeklySummaryRange, setWeeklySummaryRange] = useState<{ start: Date; end: Date } | null>(null);
+  const [statModal, setStatModal] = useState<{ type: 'monthly' | 'weekly'; transactions: Transaction[]; label: string } | null>(null);
 
   // Data from API via React Query
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
@@ -61,15 +72,8 @@ const AppContent: React.FC = () => {
   const deleteTransaction = useDeleteTransaction();
   const updateSettings = useUpdateSettings();
 
-  // Default settings while loading
-  const currentSettings = settings || {
-    monthlyIncome: 8000,
-    currency: '$',
-    showFixedCosts: true,
-    checkingBalance: 0,
-    creditCardBalance: 0,
-    balanceAsOf: new Date().toISOString(),
-  };
+  // Use loaded settings or defaults
+  const currentSettings = settings ?? DEFAULT_SETTINGS;
 
   // Handle transaction submit
   const handleTransactionSubmit = async (txData: Omit<Transaction, 'id'>, recurrence?: RecurrenceAction) => {
@@ -140,10 +144,13 @@ const AppContent: React.FC = () => {
     const endOfMonth = new Date(year, month + 1, 0).toLocaleDateString('en-CA');
 
     const d = new Date();
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    const startOfWeek = new Date(new Date(d).setDate(diff)).toLocaleDateString('en-CA');
-    const endOfWeek = new Date(new Date(d).setDate(diff + 6)).toLocaleDateString('en-CA');
+    const day = d.getDay(); // 0 = Sunday, 6 = Saturday
+    const startOfWeekDate = new Date(d);
+    startOfWeekDate.setDate(d.getDate() - day); // Go back to Sunday
+    const startOfWeek = startOfWeekDate.toLocaleDateString('en-CA');
+    const endOfWeekDate = new Date(startOfWeekDate);
+    endOfWeekDate.setDate(startOfWeekDate.getDate() + 6); // Saturday
+    const endOfWeek = endOfWeekDate.toLocaleDateString('en-CA');
 
     const monthTxs = transactions.filter((tx) => tx.date >= startOfMonth && tx.date <= endOfMonth);
 
@@ -168,10 +175,14 @@ const AppContent: React.FC = () => {
         tx.type === 'expense'
     );
 
-    const monthSpent = filteredMonthTxs.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const monthExpenseTxs = filteredMonthTxs.filter((t) => t.type === 'expense');
+    const monthSpent = monthExpenseTxs.reduce((s, t) => s + t.amount, 0);
 
     const weekSpent = weekTxs.reduce((s, t) => s + t.amount, 0);
     const remaining = effectiveIncome - monthSpent;
+
+    const monthLabel = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const weekLabel = `${startOfWeekDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeekDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
     return {
       monthSpent,
@@ -179,6 +190,10 @@ const AppContent: React.FC = () => {
       remaining,
       effectiveIncome,
       monthFixedCosts,
+      monthExpenseTxs,
+      weekTxs,
+      monthLabel,
+      weekLabel,
     };
   }, [transactions, currentDate, currentSettings.monthlyIncome, currentSettings.showFixedCosts]);
 
@@ -277,6 +292,7 @@ const AppContent: React.FC = () => {
                     color: 'text-emerald-400',
                     icon: Wallet,
                     sub: currentSettings.showFixedCosts ? 'Total' : 'Variable Only',
+                    onClick: undefined,
                   },
                   {
                     label: 'Monthly Spent',
@@ -284,6 +300,11 @@ const AppContent: React.FC = () => {
                     color: 'text-slate-300',
                     icon: TrendingDown,
                     sub: currentSettings.showFixedCosts ? 'Incl. Fixed' : 'Variable',
+                    onClick: () => setStatModal({
+                      type: 'monthly',
+                      transactions: financialStats.monthExpenseTxs,
+                      label: financialStats.monthLabel,
+                    }),
                   },
                   {
                     label: 'Variable Week Spend',
@@ -291,6 +312,11 @@ const AppContent: React.FC = () => {
                     color: 'text-indigo-400',
                     icon: ArrowRightLeft,
                     sub: 'Excl. Fixed',
+                    onClick: () => setStatModal({
+                      type: 'weekly',
+                      transactions: financialStats.weekTxs,
+                      label: financialStats.weekLabel,
+                    }),
                   },
                   {
                     label: 'Monthly Remaining',
@@ -298,9 +324,14 @@ const AppContent: React.FC = () => {
                     color: financialStats.remaining < 0 ? 'text-red-400' : 'text-emerald-400',
                     icon: DollarSign,
                     sub: 'Remaining',
+                    onClick: undefined,
                   },
                 ].map((stat, i) => (
-                  <div key={i} className="p-4 bg-[#0f0f0f] border border-white/5 rounded-2xl">
+                  <div
+                    key={i}
+                    onClick={stat.onClick}
+                    className={`p-4 bg-[#0f0f0f] border border-white/5 rounded-2xl ${stat.onClick ? 'cursor-pointer hover:bg-white/[0.02] transition-colors' : ''}`}
+                  >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <stat.icon size={12} className="text-slate-500" />
@@ -326,6 +357,10 @@ const AppContent: React.FC = () => {
                     transactions={transactions}
                     settings={currentSettings}
                     currentDate={currentDate}
+                    onEditTransaction={(tx) => {
+                      setEditingTx(tx);
+                      setIsTxModalOpen(true);
+                    }}
                   />
                 </div>
               </div>
@@ -426,6 +461,23 @@ const AppContent: React.FC = () => {
           categories={categories}
           settings={currentSettings}
           onTransactionChange={() => qc.invalidateQueries({ queryKey: ['transactions'] })}
+        />
+      )}
+
+      {statModal && (
+        <StatTransactionsModal
+          isOpen={!!statModal}
+          onClose={() => setStatModal(null)}
+          title={statModal.type === 'monthly' ? 'Monthly Spent' : 'Variable Week Spend'}
+          periodLabel={statModal.label}
+          transactions={statModal.transactions}
+          categories={categories}
+          settings={currentSettings}
+          onEditTransaction={(tx) => {
+            setStatModal(null);
+            setEditingTx(tx);
+            setIsTxModalOpen(true);
+          }}
         />
       )}
     </div>
