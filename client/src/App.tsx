@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   DollarSign,
@@ -55,6 +55,7 @@ const AppContent: React.FC = () => {
   const { data: settings, isLoading: settingsLoading } = useSettings();
 
   // Mutations
+  const qc = useQueryClient();
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransaction();
@@ -407,10 +408,9 @@ const AppContent: React.FC = () => {
         <LiveAgentOverlay
           isOpen={isLiveAgentOpen}
           onClose={() => setIsLiveAgentOpen(false)}
-          transactions={transactions}
           categories={categories}
           settings={currentSettings}
-          onLogTransaction={handleTransactionSubmit}
+          onTransactionChange={() => qc.invalidateQueries({ queryKey: ['transactions'] })}
         />
       )}
     </div>
