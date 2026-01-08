@@ -47,6 +47,23 @@ server.tool(
     isFixed: z.boolean().optional().describe("Set true for recurring monthly expenses like rent or subscriptions"),
   },
   async (params) => {
+    // If isFixed, create recurring transactions for 12 months
+    if (params.isFixed) {
+      const { isFixed, ...base } = params;
+      const transactions = await apiRequest("/transactions/recurring", {
+        method: "POST",
+        body: JSON.stringify({ base: { ...base, isFixed: true }, months: 12 }),
+      });
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Recurring transaction created for 12 months:\n${JSON.stringify(transactions, null, 2)}`,
+          },
+        ],
+      };
+    }
+
     const transaction = await apiRequest("/transactions", {
       method: "POST",
       body: JSON.stringify(params),

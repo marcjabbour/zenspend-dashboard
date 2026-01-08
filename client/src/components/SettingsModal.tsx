@@ -240,8 +240,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, settings
                       </span>
                       <input
                         type="number"
-                        value={cat.weeklyBudget}
-                        onChange={(e) => updateCategory(cat.id, { weeklyBudget: parseFloat(e.target.value) || 0 })}
+                        value={cat.weeklyBudget === 0 ? '' : cat.weeklyBudget}
+                        onChange={(e) => updateCategory(cat.id, { weeklyBudget: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                        placeholder="0"
                         className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-7 pr-3 text-sm font-mono text-white outline-none focus:border-indigo-500"
                       />
                     </div>

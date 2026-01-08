@@ -124,6 +124,19 @@ const LiveAgentOverlay: React.FC<LiveAgentOverlayProps> = ({ isOpen, onClose, ca
     try {
       switch (name) {
         case 'log_transaction': {
+          // If isFixed, create recurring transactions for 12 months
+          if (args.isFixed) {
+            const { isFixed, ...base } = args;
+            const res = await fetch(`${API_BASE}/transactions/recurring`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ base: { ...base, isFixed: true }, months: 12 })
+            });
+            const data = await res.json();
+            onTransactionChange();
+            addLog(`Logged recurring ${settings.currency}${args.amount} for ${args.description}`, 'success');
+            return `Recurring transaction created for 12 months: ${JSON.stringify(data.data)}`;
+          }
           const res = await fetch(`${API_BASE}/transactions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

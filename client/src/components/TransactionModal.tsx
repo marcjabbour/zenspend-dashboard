@@ -49,17 +49,18 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   const handleAction = (recurrence?: RecurrenceAction) => {
     if (showRecurrencePrompt?.type === 'delete') {
       onDelete?.(initialData!.id, recurrence);
-    } else {
-      onSubmit({
-        amount: parseFloat(amount),
-        description,
-        categoryId: categoryId,
-        date,
-        type,
-        isFixed,
-        groupId: initialData?.groupId || (isFixed ? crypto.randomUUID() : undefined)
-      }, recurrence);
+      // Don't reset prompt - modal will close on successful delete
+      return;
     }
+    onSubmit({
+      amount: parseFloat(amount),
+      description,
+      categoryId: categoryId,
+      date,
+      type,
+      isFixed,
+      groupId: initialData?.groupId || (isFixed ? crypto.randomUUID() : undefined)
+    }, recurrence);
     setShowRecurrencePrompt(null);
   };
 
