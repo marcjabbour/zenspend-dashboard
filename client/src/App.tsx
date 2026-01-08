@@ -118,6 +118,20 @@ const AppContent: React.FC = () => {
     updateSettings.mutate({ showFixedCosts: !currentSettings.showFixedCosts });
   };
 
+  // Handle transaction move (drag and drop)
+  const handleMoveTransaction = async (txId: string, newDate: string, groupId?: string) => {
+    try {
+      await updateTransaction.mutateAsync({
+        id: txId,
+        data: { date: newDate },
+        recurrence: 'one',
+        groupId,
+      });
+    } catch (error) {
+      console.error('Failed to move transaction:', error);
+    }
+  };
+
   // Financial Stats calculation
   const financialStats = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -352,6 +366,7 @@ const AppContent: React.FC = () => {
                       setIsTxModalOpen(true);
                     }}
                     onViewWeeklySummary={(start, end) => setWeeklySummaryRange({ start, end })}
+                    onMoveTransaction={handleMoveTransaction}
                   />
                 </div>
               </section>
