@@ -101,7 +101,73 @@ If you have existing data in localStorage from the previous version:
 - Transaction tracking (expenses, income, CC payments)
 - Budget categories with weekly/monthly periods
 - Recurring fixed costs (12-month auto-generation)
-- Financial calendar view
+- Financial calendar with drag-and-drop
 - Bank account reconciliation (Sanity Check)
 - Privacy mode (blur values)
-- Voice AI assistant (Gemini integration)
+- Voice AI assistant (Gemini Live API)
+
+## AI Architecture: MCP + Gemini Live
+
+The app includes a **Live Agent** that uses the Gemini Live API for real-time voice interaction. The agent can log transactions, query budgets, and manage your finances through natural conversation.
+
+### How it works
+
+```
+┌─────────────────┐     WebSocket      ┌─────────────────┐
+│  Browser        │◄──────────────────►│  Gemini Live    │
+│  (LiveAgent)    │    Audio/Text      │  API            │
+└────────┬────────┘                    └────────┬────────┘
+         │                                      │
+         │ HTTP/REST                            │ Tool Calls
+         ▼                                      ▼
+┌─────────────────┐                    ┌─────────────────┐
+│  Fastify        │◄───────────────────│  MCP Server     │
+│  Backend API    │    (same routes)   │  (Tool Defs)    │
+└─────────────────┘                    └─────────────────┘
+```
+
+1. **MCP Server** (`mcp-server/`) defines 8 tools using the Model Context Protocol:
+   - `log_transaction` - Create expenses, income, or CC payments
+   - `get_transactions` - Query transactions with filters
+   - `delete_transaction` - Remove a transaction
+   - `get_categories` - List budget categories
+   - `create_category` - Add new category
+   - `get_budget_status` - Check spending vs budget
+   - `get_settings` - Retrieve user preferences
+   - `update_settings` - Modify settings
+
+2. **Gemini Live API** receives these tool definitions as `FunctionDeclaration` objects and can invoke them during voice conversations.
+
+3. **LiveAgentOverlay** component handles the bidirectional audio stream and routes tool calls to the backend API.
+
+### Running the MCP Server
+
+The MCP server is designed for use with Claude Desktop or other MCP-compatible clients:
+
+```bash
+cd mcp-server
+npm run build
+npm start
+```
+
+Configure in Claude Desktop's `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "zenspend": {
+      "command": "node",
+      "args": ["/path/to/zenspend-dashboard/mcp-server/dist/index.js"],
+      "env": {
+        "ZENSPEND_API_URL": "http://localhost:3001/api"
+      }
+    }
+  }
+}
+```
+
+### Environment Variables
+
+| Variable | Location | Description |
+|----------|----------|-------------|
+| `VITE_GEMINI_API_KEY` | `client/.env.local` | Gemini API key for Live Agent |
+| `ZENSPEND_API_URL` | MCP Server env | Backend API URL (default: `http://localhost:3001/api`) |
