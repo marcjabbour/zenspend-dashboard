@@ -36,8 +36,27 @@ const WeeklySummaryModal: React.FC<WeeklySummaryModalProps> = ({
     return { totalSpent, byCategory };
   }, [weeklyTxs, categories]);
 
-  const weeklyAllowance = settings.monthlyIncome / 4.33;
-  const remainingAllowance = weeklyAllowance - stats.totalSpent;
+  // Calculate prorated weekly allowance based on days in this week that fall within the month
+  const proratedAllowance = useMemo(() => {
+    const monthStart = new Date(start.getFullYear(), start.getMonth(), 1);
+    const monthEnd = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+    const daysInMonth = monthEnd.getDate();
+    const dailyAllowance = settings.monthlyIncome / daysInMonth;
+
+    // Count days in this week that are within the current month
+    let daysInWeek = 0;
+    const current = new Date(start);
+    while (current <= end) {
+      if (current >= monthStart && current <= monthEnd) {
+        daysInWeek++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    return dailyAllowance * daysInWeek;
+  }, [start, end, settings.monthlyIncome]);
+
+  const remainingAllowance = proratedAllowance - stats.totalSpent;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">

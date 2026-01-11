@@ -151,10 +151,10 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({
             </div>
           </div>
 
-          {/* Budget Progress Bar (weekly categories only) */}
+          {/* Total Variable Spending Progress Bar */}
           <div>
             <div className="flex justify-between text-[11px] mb-1.5">
-              <span className="font-medium text-slate-400">Variable Spending</span>
+              <span className="font-medium text-slate-400">Total Variable Spending</span>
               <span className={`font-mono ${budgetProgress > 100 ? 'text-red-400' : 'text-slate-300'}`}>
                 {settings.currency}{Math.round(totalMonthlySpent).toLocaleString()} / {settings.currency}{Math.round(totalMonthlyBudget).toLocaleString()}
               </span>
@@ -191,6 +191,66 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({
               </span>
             </div>
           </div>
+
+          {/* Per-Category Progress Bars (weekly categories scaled to monthly) */}
+          {weeklyCategories.length > 0 && (
+            <div className="pt-4 border-t border-white/5">
+              <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-600 mb-3">By Category</h4>
+              <div className="space-y-3">
+                {weeklyCategories.map(cat => {
+                  const catSpent = transactions
+                    .filter(tx => tx.categoryId === cat.id && tx.type === 'expense')
+                    .filter(tx => tx.date >= currentMonth.startStr && tx.date <= currentMonth.endStr)
+                    .reduce((sum, tx) => sum + tx.amount, 0);
+                  const catBudget = cat.weeklyBudget * weeksInMonth;
+                  const catProgress = catBudget > 0 ? (catSpent / catBudget) * 100 : 0;
+                  const isAhead = catProgress > monthProgress + 10;
+                  const isOver = catProgress > 100;
+
+                  return (
+                    <div
+                      key={cat.id}
+                      onClick={() => handleCategoryClick(cat, currentMonth, false)}
+                      className="cursor-pointer hover:bg-white/[0.02] -mx-2 px-2 py-1 rounded-lg transition-colors"
+                    >
+                      <div className="flex justify-between text-[11px] mb-1.5">
+                        <span className="font-medium text-slate-400 flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                          {cat.name}
+                        </span>
+                        <span className={`font-mono ${isOver ? 'text-red-400' : 'text-slate-300'}`}>
+                          {settings.currency}{Math.round(catSpent).toLocaleString()} / {settings.currency}{Math.round(catBudget).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden relative">
+                        <div
+                          className="absolute h-full w-0.5 bg-slate-500/30 z-10"
+                          style={{ left: `${monthProgress}%` }}
+                        />
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(catProgress, 100)}%`,
+                            backgroundColor: isOver ? '#f87171' : isAhead ? '#f59e0b' : cat.color,
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-[9px] text-slate-500">
+                          {isOver ? 'Over budget' : isAhead ? 'Ahead of pace' : 'On track'}
+                        </span>
+                        <span className={`text-[10px] font-bold ${
+                          isOver ? 'text-red-500' : isAhead ? 'text-amber-500' : 'text-emerald-500'
+                        }`}>
+                          {Math.round(catProgress)}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Subscriptions (monthly categories) still show individually */}
           {monthlyCategories.length > 0 && (

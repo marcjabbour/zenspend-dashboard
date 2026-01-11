@@ -103,7 +103,7 @@ const Calendar: React.FC<CalendarProps> = ({
                     {dayNum}
                   </span>
 
-                  <div className="space-y-1 overflow-y-auto flex-1 pb-1 custom-scrollbar">
+                  <div className="space-y-1 overflow-y-auto flex-1 pb-1 custom-scrollbar max-h-[90px]">
                     {dayTxs.map(tx => {
                       const cat = categories.find(c => c.id === tx.categoryId);
                       const catColor = cat?.color || (tx.categoryId === 'fixed' ? '#94a3b8' : '#ffffff20');
@@ -126,8 +126,8 @@ const Calendar: React.FC<CalendarProps> = ({
                             color: catColor
                           }}
                         >
-                          <span className="truncate flex-1">{tx.description}</span>
-                          <span className="font-mono font-bold">${Math.round(tx.amount)}</span>
+                          <span className="truncate flex-1 max-w-[60px]" title={tx.description}>{tx.description}</span>
+                          <span className="font-mono font-bold shrink-0">${Math.round(tx.amount)}</span>
                         </div>
                       );
                     })}
